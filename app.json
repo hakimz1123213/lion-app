@@ -1,0 +1,87 @@
+{
+  "expo": {
+    "name": "Lion",
+    "slug": "noirwealth",
+    "version": "1.0.0",
+    "jsEngine": "hermes",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo.png",
+    "scheme": "lion",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lion.app",
+      "merchantIdentifier": "merchant.com.lion.app"
+    },
+    "android": {
+      "package": "com.lion.app",
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundColor": "#000000"
+      },
+      "statusBar": {
+        "barStyle": "light-content",
+        "backgroundColor": "#000000"
+      },
+      "navigationBar": {
+        "barStyle": "light-content",
+        "backgroundColor": "#000000",
+        "buttonColor": "#D4AF37"
+      },
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "com.android.alarm.permission.SET_ALARM"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#000000"
+        }
+      ],
+      "expo-web-browser",
+      "expo-video",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/logo.png",
+          "color": "#D4AF37"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.2.0"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": ""
+      }
+    },
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": ""
+    }
+  }
+}
