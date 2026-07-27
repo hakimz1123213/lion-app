@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "lion",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -19,16 +19,16 @@
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#F4EDFF"
       },
       "statusBar": {
-        "barStyle": "light-content",
-        "backgroundColor": "#000000"
+        "barStyle": "dark-content",
+        "backgroundColor": "#F4EDFF"
       },
       "navigationBar": {
-        "barStyle": "light-content",
-        "backgroundColor": "#000000",
-        "buttonColor": "#D4AF37"
+        "barStyle": "dark-content",
+        "backgroundColor": "#F4EDFF",
+        "buttonColor": "#8A2BE2"
       },
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
@@ -46,9 +46,9 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/logo.png",
-          "imageWidth": 200,
+          "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#000000"
+          "backgroundColor": "#F4EDFF"
         }
       ],
       "expo-web-browser",
@@ -58,14 +58,16 @@
         "expo-notifications",
         {
           "icon": "./assets/images/logo.png",
-          "color": "#D4AF37"
+          "color": "#8A2BE2"
         }
       ],
       [
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "2.2.0"
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "minSdkVersion": 24
           }
         }
       ]
@@ -76,7 +78,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": ""
+        "projectId": "85ab4a9a-6dca-4f10-87bc-c31e4727e356"
       }
     },
     "runtimeVersion": "1.0.0",

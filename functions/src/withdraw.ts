@@ -1,13 +1,10 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 
-// 🛡️ دالة السحب متوافقة 100% مع الجيل الثاني (2nd Gen) ونود 24
 export const submitWithdraw = onCall(async (request) => {
-    // 🚀 في الجيل الثاني، البيانات والتوثيق يتم استخراجهم مباشرة من كائن الrequest
     const payload = request.data || {};
     const auth = request.auth;
 
-    // لقط الهوية بقوة أمنية ثلاثية
     const userId = auth ? auth.uid : (payload.userId || payload.uid);
     
     if (!userId) {
@@ -16,7 +13,6 @@ export const submitWithdraw = onCall(async (request) => {
 
     const { amount, walletAddress, username } = payload;
 
-    // التأكد من المدخلات
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount < 10 || !walletAddress) { 
         throw new HttpsError('invalid-argument', 'المبلغ غير كافٍ أو العنوان مفقود.');
@@ -42,15 +38,23 @@ export const submitWithdraw = onCall(async (request) => {
             throw new HttpsError('failed-precondition', 'المبلغ يتجاوز الأرباح المسموح بسحبها.');
         }
 
-        // تسجيل المعاملة في الداتابيز
+        const cleanAddress = walletAddress.trim();
+
+        // تسجيل المعاملة بالنوع الموحد 'Withdrawal' وحفظ المحفظة بجميع المسميات
+      await userRef.update({
+             balance: currentBalance - parsedAmount 
+        });
+
+        // 2️⃣ تسجيل المعاملة بالنوع الموحد 'Withdrawal' وحفظ المحفظة بجميع المسميات
         const txsRef = admin.database().ref('transactions').push();
         await txsRef.set({
             id: txsRef.key,
             userId: userId,
             username: username || 'Unknown',
-            type: 'Withdraw',
+            type: 'Withdrawal',
             amount: parsedAmount,
-            walletAddress: walletAddress.trim(),
+            walletAddress: cleanAddress,
+            address: cleanAddress,
             status: 'Pending',
             createdAt: admin.database.ServerValue.TIMESTAMP,
         });
@@ -59,6 +63,11 @@ export const submitWithdraw = onCall(async (request) => {
 
     } catch (error: any) {
         console.error("Critical Withdraw Error:", error);
+        
+        if (error.code) {
+            throw error;
+        }
+        
         throw new HttpsError('internal', error.message || 'حدث خطأ أثناء معالجة السحب.');
     }
 });

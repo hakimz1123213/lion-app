@@ -58,6 +58,18 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // 🛠️ دالة مساعدة لتوحيد تهيئة الإيميل في مسارات الداتابيز
 const getSafeEmailNode = (email: string): string => email.trim().toLowerCase().replace(/\./g, '_');
 
+// 🛠️ دالة توليد كود عشوائي للإحالة
+// 🛠️ دالة توليد كود عشوائي للإحالة بطول 6 رموز (مطابق لنمط الصورة)
+const generateRandomCode = (length = 6) => {
+  // تم إضافة حرف 'O' ليتطابق مع النمط في الصورة
+  const chars = 'ABCDEFGHJKLMNOPQRSTUVWXYZ23456789'; 
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true); 
@@ -82,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ...data, 
               balance: parseFloat(data.balance?.toString() || '0'),
               vip_level: parseInt(data.vip_level?.toString() || '0'),
-              isAdmin: isSuperAdmin(firebaseUser.uid), // ✅ تم إصلاح الاعتماد على الـ UID
+              isAdmin: isSuperAdmin(firebaseUser.uid),
               emailVerified: data.emailVerified || false,
               isFullyVerified: data.isFullyVerified || false
             });
@@ -93,7 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
         });
 
-        // 📡 مزامنة الحسابات القديمة مقتصرة على السوبر أدمن
         if (isSuperAdmin(firebaseUser.uid)) {
           try {
             const usersSnap = await get(ref(db, 'users'));
@@ -120,7 +131,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
               if (Object.keys(updates).length > 0) {
                 await update(ref(db), updates);
-                console.log(`[Database Self-Healing Complete] Auto-Synchronized ${Object.keys(updates).length} accounts.`);
               }
             }
           } catch (syncErr) {
@@ -226,18 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const firebaseUser = userCredential.user;
-    // دالة لتوليد كود عشوائي بالكامل بالطول الذي تريده
-const generateRandomCode = (length = 8) => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; 
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
-
-// توليد الكود النهائي مباشرة
-const generatedRefCode = generateRandomCode(8);
+      const generatedRefCode = generateRandomCode(6);
 
       const userProfile: UserProfile = {
         uid: firebaseUser.uid,
@@ -255,7 +254,6 @@ const generatedRefCode = generateRandomCode(8);
       };
 
       await set(ref(db, `users/${firebaseUser.uid}`), userProfile);
-      // ✅ إصلاح الهيكلية لتكون موحدة مع باقي النودات
       await set(ref(db, `emailToUid/${safeEmailNode}`), { uid: firebaseUser.uid, password: data.password });
       await set(ref(db, `referralCodes/${generatedRefCode}`), firebaseUser.uid);
       await remove(otpRef);
@@ -334,8 +332,6 @@ const generatedRefCode = generateRandomCode(8);
             
             if (snap.exists()) {
               const referrerData = snap.val();
-              
-              // ✅ جلب تكلفة المستوى ديناميكياً بدلاً من القيم المكتوبة يدوياً
               const targetTier = getVIPTier(newLevel);
               const actualVIPPrice = cost > 0 ? cost : targetTier.entryFee;
 
@@ -581,10 +577,8 @@ const generatedRefCode = generateRandomCode(8);
   };
 
   const getAllUsers = async () => { 
-    if (!isSuperAdmin(user?.uid)) return []; 
-    
-    const snap = await get(ref(db, 'users'));   
-    
+    if (!user?.isAdmin) return []; 
+    const snap = await get(ref(db, 'users'));  
     return snap.exists() 
       ? Object.values(snap.val()).filter((u: any) => !isSuperAdmin(u.uid)) as UserProfile[] 
       : []; 

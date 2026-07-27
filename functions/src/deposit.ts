@@ -13,10 +13,12 @@ export const submitDeposit = functions.https.onCall(async (requestData: any, con
          throw new functions.https.HttpsError('unauthenticated', 'User ID is missing.');
     }
 
-    const { amount, proofImageUri, username } = payload;
+    // ✅ إزالة txid من هنا واستقبال المبلغ واسم المستخدم فقط
+    const { amount, username } = payload;
 
-    if (!amount || amount <= 0 || !proofImageUri) {
-        throw new functions.https.HttpsError('invalid-argument', 'بيانات غير مكتملة أو خاطئة.');
+    // ✅ التأكد من وجود المبلغ فقط
+    if (!amount || amount <= 0) {
+        throw new functions.https.HttpsError('invalid-argument', 'الرجاء التأكد من إدخال مبلغ صحيح.');
     }
 
     try {
@@ -47,10 +49,9 @@ export const submitDeposit = functions.https.onCall(async (requestData: any, con
             username: username || 'Unknown',
             type: 'Deposit',
             amount: amount,
-            txid: 'Verification via Screenshot URI',
-            proofImageUri: proofImageUri,
+            // ❌ تم إزالة سطر txid من هنا
             status: 'Pending',
-            note: `User initiated a deposit query of $${amount} USDT`,
+            note: `User initiated a deposit query of $${amount} USDT`, // ❌ تم إزالة ذكر txid من الملاحظة
             createdAt: currentTime,
         });
 

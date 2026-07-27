@@ -13,13 +13,11 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
 import { useAuth } from '@/hooks/useAuth';
 import { useAlert } from '@/template';
 import { VIP_TIERS, ADMIN_USDT_ADDRESS } from '@/constants/config';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const { width } = Dimensions.get('window');
 
@@ -47,8 +45,6 @@ const depositTranslations: Record<string, Record<string, string>> = {
     copied: "Copied!",
     warning: "Send BEP20 only. Other networks will result in loss of funds.",
     qrTitle: "QR Code",
-    proofTitle: "Proof of Payment",
-    uploadBtn: "Upload Screenshot",
     submit: "Submit Deposit Request",
     uploading: "Submitting...",
     success: "Success",
@@ -65,8 +61,6 @@ const depositTranslations: Record<string, Record<string, string>> = {
     copied: "تم النسخ!",
     warning: "أرسل عبر شبكة BEP20 فقط. الشبكات الأخرى ستؤدي لفقدان الأموال.",
     qrTitle: "رمز الاستجابة السريعة (QR)",
-    proofTitle: "إثبات الدفع",
-    uploadBtn: "رفع صورة الإيصال",
     submit: "إرسال طلب الإيداع",
     uploading: "جاري الإرسال...",
     success: "نجاح",
@@ -83,7 +77,6 @@ export default function DepositScreen() {
   const insets = useSafeAreaInsets();
 
   const [amount, setAmount] = useState('4100');
-  const [proofUri, setProofUri] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -95,12 +88,16 @@ export default function DepositScreen() {
   const isAR = lang === 'AR';
 
   // تصفية الباقات المطلوبة فقط (150, 300, 800, 4100)
-  const targetAmounts = [150, 300, 800, 4100];
+  const targetAmounts = [70, 150, 300, 500, 800, 1400, 2400, 4100];
   const filteredTiers = VIP_TIERS.filter(tier => targetAmounts.includes(tier.entryFee));
   const displayTiers = filteredTiers.length > 0 ? filteredTiers : [
+    { level: 1, label: 'VIP 1', entryFee: 70 },
     { level: 2, label: 'VIP 2', entryFee: 150 },
     { level: 3, label: 'VIP 3', entryFee: 300 },
+    { level: 4, label: 'VIP 4', entryFee: 500 },
     { level: 5, label: 'VIP 5', entryFee: 800 },
+    { level: 6, label: 'VIP 6', entryFee: 1400 },
+    { level: 7, label: 'VIP 7', entryFee: 2400 },
     { level: 8, label: 'VIP 8', entryFee: 4100 },
   ];
 
@@ -122,46 +119,20 @@ export default function DepositScreen() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // 📷 رفع الصورة
-  const handlePickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      showAlert('Permission Required', 'Gallery access is needed.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.5,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setProofUri(result.assets[0].uri);
-    }
-  };
-
   // 🚀 الإرسال
   const handleSubmit = async () => {
     const parsed = parseFloat(amount);
     if (isNaN(parsed) || parsed <= 0) return showAlert('Error', 'Invalid amount');
-    if (!proofUri) return showAlert('Error', 'Please upload proof of payment');
 
     try {
       setIsSubmitting(true);
-      
-      // رفع الصورة
-      const response = await fetch(proofUri);
-      const blob = await response.blob();
-      const storage = getStorage();
-      const imageRef = storageRef(storage, `deposits/${user.uid}_${Date.now()}.jpg`);
-      await uploadBytes(imageRef, blob);
-      const finalImageUrl = await getDownloadURL(imageRef);
 
-      // استدعاء الـ Cloud Function
+      // استدعاء الـ Cloud Function مباشرة
       const functions = getFunctions();
       const submitDepositReq = httpsCallable(functions, 'submitDeposit');
       await submitDepositReq({
         userId: user.uid,
         amount: parsed,
-        proofImageUri: finalImageUrl,
         username: user.username
       });
 
@@ -251,7 +222,7 @@ export default function DepositScreen() {
           ))}
         </View>
 
-        {/* ─── Unified Address, QR, and Proof Card ─── */}
+        {/* ─── Unified Address, QR Card ─── */}
         <View style={styles.card}>
           <Text style={[styles.cardTitle, isAR && { textAlign: 'right' }]}>{t.addressTitle}</Text>
           
@@ -277,22 +248,6 @@ export default function DepositScreen() {
             </Pressable>
           </View>
 
-          {/* Divider */}
-          <View style={styles.divider} />
-
-          {/* Proof of Payment */}
-          <Text style={[styles.sectionTitle, isAR && { textAlign: 'right' }]}>{t.proofTitle}</Text>
-          <Pressable style={styles.uploadArea} onPress={handlePickImage}>
-            {proofUri ? (
-              <Image source={{ uri: proofUri }} style={styles.previewImage} />
-            ) : (
-              <>
-                <Feather name="upload-cloud" size={32} color={THEME.primary} />
-                <Text style={styles.uploadText}>{t.uploadBtn}</Text>
-              </>
-            )}
-          </Pressable>
-
           <View style={[styles.warningRow, isAR && { flexDirection: 'row-reverse' }]}>
             <Feather name="alert-circle" size={16} color={THEME.warning} />
             <Text style={[styles.warningText, isAR && { textAlign: 'right' }]}>{t.warning}</Text>
@@ -301,9 +256,9 @@ export default function DepositScreen() {
 
         {/* ─── زر إرسال الطلب الأساسي ─── */}
         <Pressable 
-          style={[styles.submitBtn, (isSubmitting || !proofUri || amount === '0') && styles.submitBtnDisabled]}
+          style={[styles.submitBtn, (isSubmitting || amount === '0') && styles.submitBtnDisabled]}
           onPress={handleSubmit}
-          disabled={isSubmitting || !proofUri || amount === '0'}
+          disabled={isSubmitting || amount === '0'}
         >
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
@@ -340,10 +295,11 @@ const styles = StyleSheet.create({
   presetTextActive: { color: THEME.primary, fontWeight: '700' },
 
   // Deposit Selection Row Styles
+ // Deposit Selection Row Styles
   depositRowCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', // تم التصحيح هنا
     backgroundColor: THEME.inputBg,
     borderRadius: 16,
     padding: 12,
@@ -395,15 +351,8 @@ const styles = StyleSheet.create({
   qrCopyBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24, borderWidth: 1, borderColor: '#D1D5DB', backgroundColor: THEME.surface },
   qrCopyBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
 
-  divider: { height: 1, backgroundColor: THEME.border, marginVertical: 24 },
-
   warningRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 24 },
   warningText: { flex: 1, fontSize: 12, color: THEME.warning, fontWeight: '500' },
-
-  // Upload Area
-  uploadArea: { height: 120, borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: THEME.primary + '50', backgroundColor: THEME.primary + '05', justifyContent: 'center', alignItems: 'center' },
-  uploadText: { marginTop: 8, fontSize: 14, fontWeight: '600', color: THEME.primary },
-  previewImage: { width: '100%', height: '100%', borderRadius: 14 },
 
   // Submit Button
   submitBtn: { backgroundColor: THEME.primary, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginTop: 10 },

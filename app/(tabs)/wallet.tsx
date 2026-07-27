@@ -119,16 +119,22 @@ function TransactionItem({ tx, lang }: { tx: Transaction; lang: string }) {
   }
 
   // 2. تحديد الحالة والألوان
+  const isRejected = txStatusString.includes('reject') || txStatusString.includes('fail');
+
   if (txStatusString.includes('pending') || txStatusString.includes('wait')) {
     displayStatus = t.pendingStatus;
     statusColor = THEME.warning;
   } else if (txStatusString.includes('complete') || txStatusString.includes('success')) {
     displayStatus = t.completedStatus;
     statusColor = THEME.success;
-  } else if (txStatusString.includes('reject') || txStatusString.includes('fail')) {
+  } else if (isRejected) {
     displayStatus = t.rejectedStatus;
     statusColor = THEME.danger;
   }
+
+  // 🔴 جلب سبب الرفض الذي أرسله الأدمن
+  const rawNote = tx.note || (tx as any).rejectReason || (tx as any).reason;
+  const rejectReason = rawNote ? rawNote.replace(/^Rejected Reason:\s*/i, '') : null;
 
   return (
     <View style={[styles.txItem, isAR && { flexDirection: 'row-reverse' }]}>
@@ -141,6 +147,13 @@ function TransactionItem({ tx, lang }: { tx: Transaction; lang: string }) {
         <Text style={styles.txSubtitle}>
           {new Date(tx.createdAt).toLocaleDateString(isAR ? 'ar-DZ' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
         </Text>
+
+        {/* 🔥 إظهار سبب الرفض هنا بخط واضّح تحت التاريخ */}
+        {isRejected && rejectReason && (
+          <Text style={{ fontSize: 11, color: THEME.danger, marginTop: 4, fontWeight: '700' }}>
+            {isAR ? `سبب الرفض: ${rejectReason}` : `Reason: ${rejectReason}`}
+          </Text>
+        )}
       </View>
 
       <View style={{ alignItems: isAR ? 'flex-start' : 'flex-end' }}>

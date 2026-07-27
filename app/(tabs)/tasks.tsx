@@ -77,7 +77,16 @@ const taskTranslations: Record<string, Record<string, string>> = {
 };
 
 const ADS_POOL = [
-  "https://firebasestorage.googleapis.com/v0/b/noir-879ad.firebasestorage.app/o/YTDown_YouTube_Coca-Cola-15-Second-Spec-Commercial-Sigh_Media_0qSEWvvA6gU_001_1080p.mp4?alt=media&token=a70fc5df-edff-48b2-b598-5a6696855b6d",
+  "https://firebasestorage.googleapis.com/v0/b/lion-e7e25.firebasestorage.app/o/2026_Q1-2026-Paid-Media-Refresh_vid_domain_x_value_ar_row_1920x1080_15s%20-%20GoDaddy%20Arabia%20(1080p%2C%20h264).mp4?alt=media&token=9b8ce310-7308-4802-b77b-67ad71eab7c7",
+  "https://firebasestorage.googleapis.com/v0/b/lion-e7e25.firebasestorage.app/o/Look%20at%20that%2C%20you%20found%20it!%20%20Booking.com%20-%20Booking.com%20(1080p%2C%20h264).mp4?alt=media&token=4932838f-84a4-4206-981e-3a02cd4b3f63",
+  "https://firebasestorage.googleapis.com/v0/b/lion-e7e25.firebasestorage.app/o/MLDPOINTS%20%E2%80%93%20GET%20YOUR%20SPOT%20AT%20MLDSPOT.COM%20%20GAMERS%20-%20MLDSPOT%20(1080p%2C%20h264).mp4?alt=media&token=e3133c1d-80d7-487a-8b24-41b6cd19bdb6",
+  "https://firebasestorage.googleapis.com/v0/b/lion-e7e25.firebasestorage.app/o/Noodles%20%26%20Co.%20Noodles%E2%80%99%20Biggest%20Fan%20Buys%20an%20NFT%20-%20Ads%20of%20Brands%20(1080p%2C%20h264).mp4?alt=media&token=34c5ee95-6307-41d2-9bd6-ad4993c73ae8",
+  "https://firebasestorage.googleapis.com/v0/b/lion-e7e25.firebasestorage.app/o/Oreo%20Commercial%20Product%20Video%20-%20Running%20Television%20(1080p%2C%20h264).mp4?alt=media&token=f9684dc4-9a61-4a36-bd51-6461feb1018c",
+  "https://firebasestorage.googleapis.com/v0/b/lion-e7e25.firebasestorage.app/o/Shopify%20makes%20it%20incredibly%20easy%20to%20wake%20up%20and%20do%20what%20you%20love.%20-%20Shopify%20(1080p%2C%20h264).mp4?alt=media&token=a0dbec9d-f6e8-45b3-96e1-e660c983b341",
+  "https://firebasestorage.googleapis.com/v0/b/lion-e7e25.firebasestorage.app/o/Stays%20for%20fashionistas%20and%20fisherman%20%20Booking.com%20-%20Booking.com%20(1080p%2C%20h264).mp4?alt=media&token=c826fd2e-9fe0-4c80-8632-172f21c16927",
+  "https://firebasestorage.googleapis.com/v0/b/lion-e7e25.firebasestorage.app/o/Take-off%20on%20the%20race%20track%20as%20the%20Global%20Partner%20of%20F1%20%20Qatar%20Airways%20-%20Qatar%20Airways%20(1080p%2C%20h264).mp4?alt=media&token=5cea7eb6-c950-4d05-a5e2-5ba18a13e125",
+  "https://firebasestorage.googleapis.com/v0/b/lion-e7e25.firebasestorage.app/o/We're%20back!%20%20Emirates%20-%20Emirates%20(1080p%2C%20h264).mp4?alt=media&token=b214673c-2874-497a-803f-3a1dc6c53f7d",
+  "https://console.firebase.google.com/project/lion-e7e25/database/lion-e7e25-default-rtdb/data?hl=ar&fb_utm_campaign=Cloud-SS-DR-Firebase-FY26-global-gsem-1713590&fb_utm_content=text-ad&fb_utm_medium=cpc&fb_utm_source=google&fb_utm_term=KW_firebase&fb_gclid=CjwKCAjw5NvPBhAoEiwA_2egfhwsZoOSOFmDNGTQkBxnJjCy4oKvQBD2PbyR64AQyx6y-Cl1TlQMvhoC70AQAvD_BwE",
 ];
 
 export default function TasksScreen() {

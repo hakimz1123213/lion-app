@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { getAuth, fetchSignInMethodsForEmail } from 'firebase/auth';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -34,6 +35,8 @@ const LIGHT_BG = '#F9F8FC';
 const INPUT_BG = '#F2EFF7';
 const TEXT_DARK = '#1C1524';
 const TEXT_MUTED = '#8E8899';
+const ERROR_COLOR = '#E53935';
+const SUCCESS_COLOR = '#4CAF50'; 
 
 const registerTranslations: Record<string, Record<string, string>> = {
   EN: {
@@ -41,20 +44,22 @@ const registerTranslations: Record<string, Record<string, string>> = {
     tagline: "Build your elite financial empire.",
     emailLabel: "EMAIL",
     emailPlaceholder: "your.name@domain.com",
-    enterPromo: "Enter promo / referral code",
+    enterPromo: "Enter referral code", // ✅ تم التعديل هنا
     haveAccount: "Have an account? ",
     signIn: "Log in",
     nextBtn: "Continue",
     createPassTitle: "Create your password for",
-    passPlaceholder: "Create a password",
-    minChars: "Minimum 6 characters",
-    hasNumber: "Contains a number",
+    passPlaceholder: "Password",
+    minChars: "Minimum 8 characters",
+    hasUpperLower: "One uppercase & lowercase letter",
+    hasNumber: "One number",
+    hasSpecial: "One special character",
+    emailExists: "This email is already registered. Please log in.",
     createAccBtn: "Create account",
     otpTitle: "Verify your Security Token",
     otpSub: "We've sent a 6-digit verification code to your email.",
     verifyBtn: "Verify & Activate",
     missingEmail: "Please enter a valid email.",
-    // ترجمات شروط الاستخدام (Step 4)
     acceptTermsTitle: "Accept terms",
     acceptTermsSub: "Please read our terms. By tapping \"I accept,\" you agree to receive documents electronically and use electronic signatures for all agreements.",
     ageCheck: "I am 18 years or older and accept platform policies.",
@@ -67,20 +72,22 @@ const registerTranslations: Record<string, Record<string, string>> = {
     tagline: "أنشئ إمبراطوريتك المالية الملوكية.",
     emailLabel: "البريد الإلكتروني",
     emailPlaceholder: "أدخل بريدك الإلكتروني هنا...",
-    enterPromo: "إدخال كود الإحالة / الخصم",
+    enterPromo: "إدخال كود الإحالة", // ✅ تم التعديل هنا
     haveAccount: "لديك حساب بالفعل؟ ",
     signIn: "تسجيل الدخول",
     nextBtn: "استمرار",
     createPassTitle: "إنشاء كلمة السر الخاصة بـ",
-    passPlaceholder: "أدخل كلمة السر هنا...",
-    minChars: "6 رموز كحد أدنى",
-    hasNumber: "تحتوي على رقم على الأقل",
+    passPlaceholder: "كلمة المرور",
+    minChars: "8 رموز كحد أدنى",
+    hasUpperLower: "حرف كبير وحرف صغير",
+    hasNumber: "رقم واحد على الأقل",
+    hasSpecial: "رمز خاص واحد على الأقل",
     createAccBtn: "تأكيد وبناء الحساب",
+    emailExists: "هذا البريد مسجل بالفعل. يرجى تسجيل الدخول.",
     otpTitle: "تأكيد رمز الأمان",
     otpSub: "أدخل الكود المكون من 6 أرقام المرسل لإيميلك.",
     verifyBtn: "تفعيل الحساب الآن",
     missingEmail: "يرجى كتابة البريد الإلكتروني أولاً.",
-    // ترجمات شروط الاستخدام (Step 4)
     acceptTermsTitle: "قبول الشروط والأحكام",
     acceptTermsSub: "يرجى قراءة الشروط. بالنقر على \"أوافق\"، فإنك توافق على استلام المستندات إلكترونياً واستخدام التوقيعات الإلكترونية لجميع الاتفاقيات.",
     ageCheck: "أبلغ من العمر 18 عاماً أو أكثر وأوافق على سياسات المنصة.",
@@ -96,15 +103,17 @@ export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1); // 1: Email, 2: Password, 3: OTP, 4: Terms
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [showReferralInput, setShowReferralInput] = useState(false);
   const [otpInput, setOtpInput] = useState('');
   
-  // حالة مربعات الشروط (Step 4)
+  const [emailError, setEmailError] = useState('');
+  
   const [acceptedAge, setAcceptedAge] = useState(false);
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
 
@@ -114,7 +123,6 @@ export default function RegisterScreen() {
   const t = registerTranslations[lang];
   const isAR = lang === 'AR';
 
-  // 🦁 أنيميشن الشعار العائم المتموج
   const floatAnim = useSharedValue(0);
   useEffect(() => {
     floatAnim.value = withRepeat(
@@ -131,20 +139,46 @@ export default function RegisterScreen() {
     transform: [{ translateY: floatAnim.value }],
   }));
 
-  const hasMinChars = password.length >= 6;
+  const hasMinChars = password.length >= 8;
+  const hasUpperLower = /[a-z]/.test(password) && /[A-Z]/.test(password);
   const hasNum = /\d/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  
+  const isPasswordValid = hasMinChars && hasUpperLower && hasNum && hasSpecial;
 
-  const handleNextStep = () => {
-    if (!email.trim() || !email.includes('@')) {
-      showAlert("Notice", t.missingEmail);
+  const handleNextStep = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email)) {
+      setEmailError(t.missingEmail);
       return;
     }
-    setUsername(email.split('@')[0]);
-    setStep(2);
+
+    setLoading(true);
+    setEmailError('');
+
+    try {
+      const auth = getAuth();
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email.trim());
+
+      if (signInMethods.length > 0) {
+        setEmailError(t.emailExists);
+        return; 
+      }
+
+      setUsername(email.split('@')[0]);
+      setStep(2);
+
+    } catch (error) {
+      console.log("Error checking email:", error);
+      setUsername(email.split('@')[0]);
+      setStep(2);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async () => {
-    if (!hasMinChars || !hasNum) return;
+    if (!isPasswordValid) return;
 
     setLoading(true);
     const result = await register(username, email.trim(), password, "", referralCode.trim());
@@ -166,7 +200,6 @@ export default function RegisterScreen() {
     setLoading(false);
 
     if (result.error === null) {
-      // بعد نجاح الـ OTP ننتقل مباشرة لشروط وأحكام المنصة (الخطوة 4)
       setStep(4);
     } else {
       const cleanMsg = typeof result.error === 'string' ? result.error : "Validation failed.";
@@ -189,7 +222,6 @@ export default function RegisterScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* 🔝 الهيدر: زر العودة وتغيير اللغة */}
         <View style={[styles.header, { paddingTop: insets.top + 10 }, isAR && { flexDirection: 'row-reverse' }]}>
           {step > 1 && step < 4 ? (
             <Pressable onPress={() => setStep((prev) => (prev - 1) as any)} style={styles.backBtn}>
@@ -222,25 +254,42 @@ export default function RegisterScreen() {
             <View style={styles.inputGroup}>
               <Text style={[styles.label, isAR && { textAlign: 'right' }]}>{t.emailLabel}</Text>
               <TextInput
-                style={[styles.input, isAR && { textAlign: 'right' }, email.length > 0 && styles.inputFocused]}
+                style={[
+                  styles.input, 
+                  isAR && { textAlign: 'right' }, 
+                  email.length > 0 && styles.inputFocused,
+                  Boolean(emailError) && { borderColor: ERROR_COLOR }
+                ]}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (emailError) setEmailError('');
+                }}
                 placeholder={t.emailPlaceholder}
                 placeholderTextColor={TEXT_MUTED}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
+              {Boolean(emailError) && (
+                <Text style={[styles.errorText, isAR && { textAlign: 'right' }]}>
+                  {emailError}
+                </Text>
+              )}
             </View>
 
             <Pressable
               style={({ pressed }) => [
                 styles.primaryBtn,
-                { opacity: email.trim().length > 3 ? (pressed ? 0.85 : 1) : 0.5 }
+                { opacity: (email.trim().length > 3 && !loading) ? (pressed ? 0.85 : 1) : 0.5 }
               ]}
-              disabled={email.trim().length <= 3}
+              disabled={email.trim().length <= 3 || loading}
               onPress={handleNextStep}
             >
-              <Text style={styles.primaryBtnText}>{t.nextBtn}</Text>
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.primaryBtnText}>{t.nextBtn}</Text>
+              )}
             </Pressable>
 
             {!showReferralInput ? (
@@ -275,34 +324,52 @@ export default function RegisterScreen() {
             <Text style={[styles.stepTitle, isAR && { textAlign: 'right' }]}>{t.createPassTitle}</Text>
             <Text style={[styles.emailHighlight, isAR && { textAlign: 'right' }]}>{email}</Text>
 
-            <View style={[styles.inputGroup, { marginTop: 24 }]}>
+            <View style={[styles.passwordInputContainer, isAR && { flexDirection: 'row-reverse' }]}>
               <TextInput
-                style={[styles.input, styles.inputFocused, isAR && { textAlign: 'right' }]}
+                style={[styles.passwordInput, isAR && { textAlign: 'right' }]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder={t.passPlaceholder}
                 placeholderTextColor={TEXT_MUTED}
-                secureTextEntry
+                secureTextEntry={!showPassword}
               />
+              <Pressable onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+                <Ionicons 
+                  name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                  size={24} 
+                  color={TEXT_DARK} 
+                />
+              </Pressable>
             </View>
 
             <View style={styles.checklist}>
               <View style={[styles.checkRow, isAR && { flexDirection: 'row-reverse' }]}>
-                <MaterialIcons name={hasMinChars ? "check-circle" : "cancel"} size={18} color={hasMinChars ? NOIR_GOLD : TEXT_MUTED} />
+                <Ionicons name="checkmark-circle" size={18} color={hasMinChars ? SUCCESS_COLOR : TEXT_MUTED} />
                 <Text style={[styles.checkText, hasMinChars && styles.checkTextActive]}>{t.minChars}</Text>
               </View>
+
               <View style={[styles.checkRow, isAR && { flexDirection: 'row-reverse' }]}>
-                <MaterialIcons name={hasNum ? "check-circle" : "cancel"} size={18} color={hasNum ? NOIR_GOLD : TEXT_MUTED} />
+                <Ionicons name="checkmark-circle" size={18} color={hasUpperLower ? SUCCESS_COLOR : TEXT_MUTED} />
+                <Text style={[styles.checkText, hasUpperLower && styles.checkTextActive]}>{t.hasUpperLower}</Text>
+              </View>
+
+              <View style={[styles.checkRow, isAR && { flexDirection: 'row-reverse' }]}>
+                <Ionicons name="checkmark-circle" size={18} color={hasNum ? SUCCESS_COLOR : TEXT_MUTED} />
                 <Text style={[styles.checkText, hasNum && styles.checkTextActive]}>{t.hasNumber}</Text>
+              </View>
+
+              <View style={[styles.checkRow, isAR && { flexDirection: 'row-reverse' }]}>
+                <Ionicons name="checkmark-circle" size={18} color={hasSpecial ? SUCCESS_COLOR : TEXT_MUTED} />
+                <Text style={[styles.checkText, hasSpecial && styles.checkTextActive]}>{t.hasSpecial}</Text>
               </View>
             </View>
 
             <Pressable
               style={({ pressed }) => [
                 styles.primaryBtn,
-                { marginTop: 40, opacity: (hasMinChars && hasNum) ? (pressed ? 0.85 : 1) : 0.5 }
+                { marginTop: 40, opacity: isPasswordValid ? (pressed ? 0.85 : 1) : 0.5 }
               ]}
-              disabled={!hasMinChars || !hasNum || loading}
+              disabled={!isPasswordValid || loading}
               onPress={handleRegister}
             >
               {loading ? (
@@ -347,7 +414,7 @@ export default function RegisterScreen() {
           </Animated.View>
         )}
 
-        {/* -------------------- STEP 4: ACCEPT TERMS & POLICIES (مربع الشروط الجديد) -------------------- */}
+        {/* -------------------- STEP 4: ACCEPT TERMS & POLICIES -------------------- */}
         {step === 4 && (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} style={styles.container}>
             <View style={styles.termsCard}>
@@ -358,7 +425,6 @@ export default function RegisterScreen() {
                 {t.acceptTermsSub}
               </Text>
 
-              {/* الشرط الأول: العمر */}
               <Pressable 
                 style={[styles.checkboxRow, isAR && { flexDirection: 'row-reverse' }]}
                 onPress={() => setAcceptedAge(!acceptedAge)}
@@ -371,7 +437,6 @@ export default function RegisterScreen() {
                 </Text>
               </Pressable>
 
-              {/* الشرط الثاني: سياسة المنصة والخصوصية */}
               <Pressable 
                 style={[styles.checkboxRow, isAR && { flexDirection: 'row-reverse' }]}
                 onPress={() => setAcceptedPolicy(!acceptedPolicy)}
@@ -384,7 +449,6 @@ export default function RegisterScreen() {
                 </Text>
               </Pressable>
 
-              {/* زر القبول النهائي (I Accept) */}
               <Pressable
                 style={({ pressed }) => [
                   styles.primaryBtn,
@@ -396,7 +460,6 @@ export default function RegisterScreen() {
                 <Text style={styles.primaryBtnText}>{t.iAcceptBtn}</Text>
               </Pressable>
 
-              {/* زر الإلغاء */}
               <Pressable 
                 onPress={() => setStep(3)} 
                 style={{ marginTop: 16, alignItems: 'center' }}
@@ -504,6 +567,29 @@ const styles = StyleSheet.create({
     borderColor: NOIR_PURPLE,
     backgroundColor: '#FFF',
   },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: INPUT_BG,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    marginTop: 24,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 15,
+    color: TEXT_DARK,
+  },
+  errorText: {
+    color: ERROR_COLOR,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
+    marginLeft: 4,
+  },
   primaryBtn: {
     backgroundColor: NOIR_PURPLE,
     borderRadius: 30,
@@ -555,7 +641,7 @@ const styles = StyleSheet.create({
   emailHighlight: {
     fontSize: 15,
     fontWeight: '700',
-    color: NOIR_GOLD,
+    color: SUCCESS_COLOR,
     marginTop: 4,
   },
   checklist: {
@@ -583,7 +669,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderColor: NOIR_PURPLE,
   },
-  // تصاميم شروط الاستخدام (Step 4)
   termsCard: {
     backgroundColor: '#FFF',
     borderRadius: 24,

@@ -69,6 +69,11 @@ function TxRow({ tx, lang, rtlRow, rtlAlign, isLast }: { tx: Transaction; lang: 
   const iconColor = isReward ? '#F59E0B' : isDeposit ? '#10B981' : '#6B7280';
   const iconBg = isReward ? '#FEF3C7' : isDeposit ? '#D1FAE5' : '#F3F4F6';
 
+  // 🔴 استخراج سبب الرفض وتنظيف النص
+  const isRejected = String(tx.status).toLowerCase().includes('reject');
+  const rawNote = tx.note || (tx as any).rejectReason || (tx as any).reason;
+  const rejectReason = rawNote ? rawNote.replace(/^Rejected Reason:\s*/i, '') : null;
+
   return (
     <View style={[styles.txRow, rtlRow, isLast && { borderBottomWidth: 0, paddingBottom: 0 }]}>
       <View style={[styles.txIconBox, { borderColor: iconBg }]}>
@@ -76,13 +81,24 @@ function TxRow({ tx, lang, rtlRow, rtlAlign, isLast }: { tx: Transaction; lang: 
             <Feather name={iconName} size={16} color={iconColor} />
          </View>
       </View>
+
       <View style={[styles.txDetails, rtlAlign]}>
         <Text style={styles.txTitle}>{displayType}</Text>
         <Text style={styles.txDate}>{formatDate(tx.createdAt, lang)}</Text>
+        
+        {/* 🔥 عرض سبب الرفض تحت المعاملة إذا كانت مرفوضة */}
+        {isRejected && rejectReason && (
+          <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 3, fontWeight: '600' }}>
+            {lang === 'AR' ? `سبب الرفض: ${rejectReason}` : `Reason: ${rejectReason}`}
+          </Text>
+        )}
       </View>
+
       <View style={{ alignItems: lang === 'AR' ? 'flex-start' : 'flex-end' }}>
         <Text style={styles.txAmount}>{formatAmount(tx.type, tx.amount)}</Text>
-        <Text style={styles.txStatusText}>Credit</Text>
+        <Text style={[styles.txStatusText, isRejected && { color: '#EF4444' }]}>
+          {isRejected ? (lang === 'AR' ? 'مرفوضة' : 'Rejected') : 'Credit'}
+        </Text>
       </View>
     </View>
   );
@@ -209,24 +225,27 @@ export default function DashboardScreen() {
         </View>
 
         {/* 3. Action Buttons Section */}
+  {/* 3. Action Buttons Section */}
         <View style={[styles.actionRow, rtlRow]}>
           <Pressable style={styles.actionBtn} onPress={() => router.push('/withdraw')}>
             <View style={styles.actionCircle}>
-              <Feather name="refresh-cw" size={20} color="#7C3AED" />
+              {/* أيقونة السحب الجديدة (سهم لأعلى يرمز لخروج المال) */}
+              <Feather name="arrow-up-circle" size={24} color="#7C3AED" />
             </View>
             <Text style={styles.actionText}>{t.withdraw}</Text>
           </Pressable>
 
           <Pressable style={styles.actionBtn} onPress={() => router.push('/deposit')}>
             <View style={styles.actionCircle}>
-              <Feather name="sliders" size={20} color="#7C3AED" />
+              {/* أيقونة الإيداع الجديدة (سهم لأسفل يرمز لدخول المال) */}
+              <Feather name="arrow-down-circle" size={24} color="#7C3AED" />
             </View>
             <Text style={styles.actionText}>{t.deposit}</Text>
           </Pressable>
 
           <Pressable style={styles.actionBtn} onPress={() => router.push('/tasks')}>
             <View style={styles.actionCircle}>
-              <MaterialCommunityIcons name="target" size={22} color="#7C3AED" />
+              <MaterialCommunityIcons name="target" size={24} color="#7C3AED" />
               {tasksDoneToday === false && <View style={styles.taskBadge} />}
             </View>
             <Text style={styles.actionText}>{t.dailyTask}</Text>

@@ -1,46 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Platform, View, ActivityIndicator, StyleSheet } from 'react-native';
-import { Tabs, useRouter } from 'expo-router';
+import React from 'react';
+import { Platform, View, StyleSheet } from 'react-native';
+import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
-import { auth } from '../../services/firebaseConfig'; 
 import { Feather } from '@expo/vector-icons';
-
-interface AppUser extends FirebaseAuthUser {
-  isAdmin?: boolean;
-}
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<AppUser | null>(null);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser as AppUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [user, loading, router]);
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7C3AED" />
-      </View>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
+  // 🧹 تم حذف أكواد الفحص (loading & user) من هنا!
+  // لماذا؟ لأن الملف الرئيسي _layout.tsx أصبح هو الحارس العام للتطبيق بأكمله
+  // ولن يسمح لأي شخص بالوصول إلى هذه الصفحة إلا إذا كان مسجلاً للدخول فعلاً.
 
   return (
     <Tabs
@@ -108,12 +77,6 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   notificationDot: {
     position: 'absolute',
     top: -2,

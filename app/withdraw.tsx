@@ -105,6 +105,7 @@ export default function WithdrawScreen() {
   const [amount, setAmount] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
 
   if (!user) return null;
 
@@ -150,7 +151,7 @@ export default function WithdrawScreen() {
         userId: user.uid, vipLevel: user.vip_level, balance: user.balance - parsed, timestamp: Date.now(),
       });
 
-      await sendTelegramAdminAlert(user.username, 'Withdrawal', parsed, `Address: ${walletAddress.trim()}`, (user as any).profileImage || '');
+      sendTelegramAdminAlert(user.username, 'Withdrawal', parsed, `Address: ${walletAddress.trim()}`);
 
       showAlert(t.reqSentTitle, `${t.reqSentDesc1} $${parsed.toFixed(2)} ${t.reqSentDesc2}`, [{ text: t.backBtnText, onPress: () => router.back() }]);
     } catch (e: any) {
